@@ -1,0 +1,1 @@
+{"name":"lumrivo-clinical","private":true,"version":"0.1.0","scripts":{"dev":"HOST=0.0.0.0 PORT=4173 python3 -m app.server","check":"node --check app/static/app.js && python3 -m unittest discover -s tests -v"}}

@@ -1,0 +1,22 @@
+{
+  "release": "0.1.0",
+  "files": {
+    ".dockerignore": "8cb4795cc4286ea97c08ca1b16dcd912d454c1bf2d3ca693feaa2868452fe7ac",
+    ".env.example": "de59286739ac6e7df7ab175f9c8e219b0db800053ef295ce50a4539cc166cadf",
+    ".gitignore": "a3a74f75c77405b147a5ea0da3c0add2622497b0f29882961eb18a1b57120b7f",
+    "Dockerfile": "c692200a13de000b5884e36c2b85ad089e22ae47436362974a7dc6df831f3fda",
+    "README.md": "e6ef91d77b3e566db2a2e5fe61c1fe287fbdfa04cc3093a82aae4fcb768b20de",
+    "VERIFICATION.md": "61958ab5447cc29a6664325f2871febe3adaeac7758b42f526721d773ff7b953",
+    "app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/ai.py": "5cfbcdd7a08461ee2ddda63e365297aca06235db1f11db7cdeb8791db518fe32",
+    "app/server.py": "a63f275f38b4d0098eca71628830c0dff2a8cf43a9bd900148ed47fc25c192f5",
+    "app/static/app.js": "8cf3f3fb3b3d84eb351228d86818fc82bb6545924beec064af2e4604a8df3cf0",
+    "app/static/index.html": "00525a4bda6be6c9e37a1d6c30135953e90225394527f22b1f0b4a3bbf1ccbd8",
+    "app/static/styles.css": "3437b8ea1fe7c54f0984b52c27cc80ebbc32f1fa8d45531c06d94911d44d233a",
+    "compose.yaml": "3b740bfe3c9e9cb65c92c5070f4d9033739aaae253607262725bd53296cde5bf",
+    "manage.py": "35c1742d848b3daafcdd4290340cefa905461d7517b021681843731e09e8d9d1",
+    "package.json": "ceeb01c5531a8c652d7a931fcc52d63073515cea7c05800cb6060b89b67d81a4",
+    "requirements.txt": "911acb5d266a3da97b32a1dd1449fc5bc25803e2af2ede424da81ef1e13da87a",
+    "tests/test_workflows.py": "9a85f74f901dd391f58a8d933db6f548ef1cf05cb7540d3446c54f10259ac2ca"
+  }
+}

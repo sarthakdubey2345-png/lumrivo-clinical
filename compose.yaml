@@ -1,0 +1,23 @@
+services:
+  clinical:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      PRODUCTION: "true"
+      DEMO_MODE: "true"
+      APP_SECRET: ${APP_SECRET:?Generate a unique APP_SECRET first}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Set a unique DEMO_PASSWORD first}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      TRANSCRIPTION_MODEL: ${TRANSCRIPTION_MODEL:-gpt-4o-transcribe}
+      DOCUMENT_MODEL: ${DOCUMENT_MODEL:-gpt-4.1-mini}
+      DATA_DIR: /data
+    volumes:
+      - clinical_data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  clinical_data:
