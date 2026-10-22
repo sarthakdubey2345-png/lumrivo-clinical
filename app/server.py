@@ -171,16 +171,26 @@ def validate_draft(d):
     if not isinstance(uncertainties,list) or len(uncertainties)>60 or any(not isinstance(x,str) or len(x)>2000 for x in uncertainties):
         raise Error('Invalid review items.')
     out['uncertainties'] = uncertainties
+    out['allergy_reviewed'] = d.get('allergy_reviewed') is True
+    evidence = d.get('source_evidence', {})
+    if not isinstance(evidence, dict) or any(k not in ai.TEXT_FIELDS or not isinstance(v, list) or len(v)>20 or any(not isinstance(q,str) or len(q)>12000 for q in v) for k,v in evidence.items()):
+        raise Error('Invalid source evidence.')
+    out['source_evidence'] = evidence
+    resolutions = d.get('review_resolutions', [])
+    if not isinstance(resolutions, list) or len(resolutions)>200 or any(not isinstance(x,str) or len(x)>4000 for x in resolutions):
+        raise Error('Invalid review resolutions.')
+    out['review_resolutions'] = resolutions
     return out
 
 def approval_errors(d):
     errors=[]
     if not d['complaints']: errors.append('Presenting complaint is missing.')
     if not d['assessment']: errors.append('Clinician assessment is missing.')
-    if d['allergy_status'] in ('not_assessed','uncertain'): errors.append('Review the allergy status before issuing.')
+    if d['allergy_status'] in ('not_assessed','uncertain') and not d.get('allergy_reviewed'):
+        errors.append('Allergies: clarify the status, or explicitly acknowledge that it remains unknown. The document will retain that warning.')
     if d['allergy_status']=='reported' and not d['allergies']: errors.append('Document the reported allergy/reaction.')
     if d['allergy_status']=='none_reported' and d['allergies']: errors.append('Resolve the conflict between allergy status and reaction details.')
-    if d['uncertainties']: errors.append('Resolve or explicitly remove each review item after checking its source.')
+    if d['uncertainties']: errors.append(f'Review items: {len(d["uncertainties"])} unresolved. Review each item against the source and record how it was resolved.')
     for i,m in enumerate(d['medicines']):
         if any(not m[k] for k in ['name','strength','dose','route','frequency','duration']): errors.append(f'Medicine {i+1}: complete name, strength, dose, route, frequency and duration (or specify clinician-approved not-applicable text).')
         if not m['confirmed']: errors.append(f'Medicine {i+1}: confirm the medicine and its instructions.')
@@ -358,7 +368,7 @@ def route(c,env,u,s,path,method,body):
         if action=='propose-amendment' and not instruction:raise Error('Enter a clinician amendment instruction.')
         current=validate_draft(body.get('draft',json.loads(e['draft'])))
         catalogue=[dict(x) for x in c.execute('SELECT name,strength,form,source FROM catalogue WHERE org=?',(u['org'],))]
-        proposed=validate_draft(ai.generate(transcript,current,instruction if action=='propose-amendment' else None,catalogue))
+        proposed=validate_draft(ai.generate(transcript,current if action=='propose-amendment' else None,instruction if action=='propose-amendment' else None,None))
         # Model output never carries medicine confirmation or approval authority.
         for med in proposed['medicines']:med['confirmed']=False
         audit(c,u,'ai_proposal_generated',id_);c.commit();return {'proposal':proposed,'version':e['version']}
@@ -371,10 +381,10 @@ def application(env,start_response):
     if PRODUCTION:headers.append(('Strict-Transport-Security','max-age=31536000'))
     path=env.get('PATH_INFO','/');method=env.get('REQUEST_METHOD','GET');status=200;c=None
     try:
-        if path=='/health':result={'status':'ok','mode':'demonstration'}
+        if path=='/health':result={'status':'ok','mode':'demonstration','release':'0.2.0-evidence-review'}
         elif not path.startswith('/api/'):
             if method not in ('GET','HEAD'):raise Error('Method not allowed.',405)
-            files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css'}
+            files={'/':'index.html','/app.js':'app.js','/styles.css':'styles.css','/safety.js':'safety.js'}
             if path not in files:raise Error('Not found.',404)
             file=ROOT/'static'/files[path]; raw=file.read_bytes()
             headers.append(('Content-Type',mimetypes.guess_type(str(file))[0] or 'application/octet-stream'))
@@ -413,3 +423,4 @@ if __name__=='__main__':
     host=os.environ.get('HOST','127.0.0.1');port=int(os.environ.get('PORT','8000'))
     print(f'Lumrivo Clinical demonstration: http://{host}:{port}')
     with make_server(host,port,application,server_class=ThreadedServer) as httpd:httpd.serve_forever()
+
