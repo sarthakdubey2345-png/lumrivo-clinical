@@ -36,7 +36,8 @@ Planned clinical examination (listening to lungs, checking vitals) belongs in hi
 Do not turn future examination into findings, proposed tests into completed tests, a temperature into a duration,
 an interval into a liquid volume, a dose into a concentration, or a maximum daily dose into treatment duration.
 Put maximum dose and PRN conditions into timing as explicitly stated; do not calculate tablet counts or frequency.
-Do not infer an ingredient from a brand or a generic from a misheard name. Do not add syrup/tablet or oral route.
+Medicine names MUST be copied exactly as spoken, including the original script; never translate, transliterate, expand a brand to its ingredient, or guess a generic from a misheard name. Do not add syrup/tablet or oral route.
+All medicine names, doses, maximum daily doses and schedules belong ONLY in medicines, never general instructions, diet, tests or followup. General instructions contain only non-medicine advice. The allergies field contains only a reported substance/reaction; leave it empty for none_reported and not_assessed.
 Do not turn an unasked allergy question into a negative. allergy_status is not_assessed unless explicitly discussed,
 none_reported only for an explicit denial, reported for an explicit reaction, uncertain for ambiguity.
 Missing values stay empty. Use uncertainties ONLY for source ambiguity, conflicting information or incomplete medicine
@@ -135,7 +136,7 @@ def generate(transcript, current=None, instruction=None, catalogue=None):
         quotes = []
         for key in MED:
             fact = med.get(key)
-            if check_fact(fact, source, numeric=True):
+            if check_fact(fact, source, numeric=True) and (key != 'name' or not fact['value'].strip() or norm(fact['value']) in norm(' '.join(fact['evidence']))):
                 row[key] = fact['value'].strip()
                 for q in fact['evidence']:
                     if q not in quotes: quotes.append(q)
@@ -168,6 +169,15 @@ def generate(transcript, current=None, instruction=None, catalogue=None):
         med['confirmed'] = False
         missing = [k for k in ('strength', 'dose', 'route', 'frequency', 'duration') if not med.get(k)]
         if missing: warn(f'Medicine {i+1}: clinician must specify missing {", ".join(missing)}; these were not inferred.')
+    if out['allergy_status']=='none_reported' and norm(out['allergies']) in ('none_reported','none','no known allergies','no allergies reported','no known allergies reported'):
+        out['allergies']=''
+        out['source_evidence'].pop('allergies', None)
+    # Medicine directions must not bypass the structured medicine confirmation through free text.
+    for key in ('instructions','diet','tests','followup'):
+        if re.search(r'\d[\d.,\s–-]*\s*(?:mg|mcg|ml|milligrams?|मिलिग्राम|मिलीग्राम|मिलिलिटर)\b', out[key], re.I):
+            out[key]=''
+            out['source_evidence'].pop(key, None)
+            warn(f'{key.capitalize()}: possible medicine directions withheld from free text. Record and confirm the complete instructions in the medicine row.')
     out['uncertainties'] = warnings[:60]
     # An extraction must never carry a clinician acknowledgement forward.
     out['allergy_reviewed'] = False
