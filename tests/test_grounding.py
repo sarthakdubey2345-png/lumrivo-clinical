@@ -77,6 +77,15 @@ class Grounding(unittest.TestCase):
             result=ai.transcribe(b'fictional audio','audio/webm')
         self.assertIn('Speaker A',result);self.assertIn('Speaker B',result);self.assertNotIn('Doctor:',result)
         body=call.call_args.args[1];self.assertIn(b'diarized_json',body);self.assertIn(b'chunking_strategy',body)
+    def test_guessed_generic_or_formulation_not_in_source_is_withheld(self):
+        raw=candidate();m=medication();m['name']=fact('Paracetamol syrup',['Paracetamol 500 mg every 6-8 hours as needed for fever.']);raw['medicines']=[m]
+        self.assertEqual(self.generate(raw)['medicines'],[])
+    def test_medication_directions_cannot_bypass_medicine_review(self):
+        raw=candidate();raw['instructions']=fact('Paracetamol 500 mg every 6-8 hours as needed for fever',['Paracetamol 500 mg every 6-8 hours as needed for fever.'])
+        result=self.generate(raw);self.assertEqual(result['instructions'],'');self.assertTrue(any('free text' in x for x in result['uncertainties']))
+    def test_negative_allergy_label_does_not_become_reaction_conflict(self):
+        raw=candidate();raw['allergy_status']=fact('none_reported',['No known allergies.']);raw['allergies']=fact('none_reported',['No known allergies.'])
+        result=self.generate(raw);self.assertEqual(result['allergy_status'],'none_reported');self.assertEqual(result['allergies'],'')
     def test_no_speech_is_an_error_not_invented_transcript(self):
         with patch.object(ai,'request',return_value={'segments':[]}):
             with self.assertRaises(ai.ProviderError):ai.transcribe(b'fictional','audio/webm')
