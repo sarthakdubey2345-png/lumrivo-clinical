@@ -99,6 +99,19 @@ class Workflows(unittest.TestCase):
     def test_approval_blocks_unassessed_allergies(self):
         d=self.good();d['allergy_status']='not_assessed';self.save(d)
         self.assertEqual(self.doctor.post('approve',{'attest':True})[0],422)
+    def test_unknown_allergies_require_explicit_acknowledgement_and_remain_unknown(self):
+        d=self.good();d.update(allergy_status='not_assessed',allergy_reviewed=True);self.save(d)
+        result=self.doctor.post('approve',{'attest':True});self.assertEqual(result[0],200)
+        documents=self.doctor.request('encounters/e_p_aanya/history')[1]['documents']
+        issued=next(x for x in documents if x['id']==result[1]['id'])['snapshot']['draft']
+        self.assertEqual(issued['allergy_status'],'not_assessed');self.assertTrue(issued['allergy_reviewed'])
+    def test_source_evidence_and_review_notes_persist(self):
+        d=self.good();d.update(source_evidence={'complaints':['Fictional source']},review_resolutions=['Checked source; unsupported detail removed.']);self.save(d)
+        saved=self.doctor.encounter()['draft'];self.assertEqual(saved['source_evidence'],d['source_evidence']);self.assertEqual(saved['review_resolutions'],d['review_resolutions'])
+    def test_generate_passes_no_current_draft(self):
+        with patch.object(server.ai,'generate',return_value=self.good()) as generate:
+            result=self.doctor.post('generate',{'transcript':'Fictional source','draft':self.good()})
+        self.assertEqual(result[0],200);self.assertIsNone(generate.call_args.args[1])
     def test_approval_blocks_allergy_conflict(self):
         d=self.good();d['allergies']='Reported fictional reaction';self.save(d)
         self.assertEqual(self.doctor.post('approve',{'attest':True})[0],422)
@@ -169,3 +182,4 @@ class Workflows(unittest.TestCase):
         self.assertNotIn('Fictional complaint',json.dumps(rows))
 
 if __name__=='__main__':unittest.main()
+

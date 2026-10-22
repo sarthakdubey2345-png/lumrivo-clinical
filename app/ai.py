@@ -27,7 +27,7 @@ def request(path, data, content_type='application/json'):
     req = urllib.request.Request('https://api.openai.com/v1/' + path, data=data,
         headers={'Authorization': 'Bearer ' + key, 'Content-Type': content_type})
     try:
-        with urllib.request.urlopen(req, timeout=90) as response:
+        with urllib.request.urlopen(req, timeout=65) as response:
             return json.load(response)
     except urllib.error.HTTPError as e:
         raise ProviderError(f'AI provider rejected the request (HTTP {e.code}). No draft was changed.') from None
@@ -69,3 +69,7 @@ def generate(transcript, current=None, instruction=None, catalogue=None):
         return document
     except (KeyError, IndexError, TypeError, ValueError):
         raise ProviderError('The provider returned an invalid draft. Your saved record is unchanged.') from None
+
+
+# v0.2: replace unconstrained extraction with evidence-constrained, independently audited drafting.
+from .grounding import generate, transcribe
